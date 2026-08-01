@@ -3989,6 +3989,43 @@ function BankItems_SaveCurrency()
 	end
 end
 
+-- Fires when the current character pulls a transferable currency (e.g. Timewarped Badges) from
+-- another of the account's characters via the Warband Bank currency panel. That source character
+-- isn't online to re-scan itself, so without this its saved snapshot would keep showing the
+-- pre-transfer amount until it's next logged into. Non-transferable currencies never reach this
+-- hook since Blizzard's UI only offers transfer for currencies that support it.
+function BankItems_Hook_CurrencyTransfer(sourceGUID, currencyID, transferAmt)
+	if not sourceGUID or not currencyID then return end
+
+	local transferCost = transferAmt
+	if C_CurrencyInfo.GetCostToTransferCurrency then
+		transferCost = C_CurrencyInfo.GetCostToTransferCurrency(currencyID, transferAmt) or transferAmt
+	end
+
+	local _, _, _, _, _, name, realm = GetPlayerInfoByGUID(sourceGUID)
+	if not name then return end
+	local sourceKey = name.."|"..((realm and realm ~= "") and realm or selfPlayerRealmName)
+	local sourcePlayer = BankItems_Save[sourceKey]
+	if not sourcePlayer or not sourcePlayer.Bag102 then return end
+
+	local currencyLinkStr = "currency:"..currencyID
+	for i = 1, #sourcePlayer.Bag102 do
+		local itemPointer = sourcePlayer.Bag102[i]
+		if itemPointer.link and strmatch(itemPointer.link, "(currency:%d+)") == currencyLinkStr then
+			itemPointer.count = max(0, (itemPointer.count or 0) - transferCost)
+			if bankPlayer == sourcePlayer and BagContainerAr[102] and BagContainerAr[102]:IsVisible() then
+				BagContainerAr[102]:Hide()
+				BagButtonAr[102]:Click()
+			end
+			break
+		end
+	end
+end
+
+if C_CurrencyInfo.RequestCurrencyFromAccountCharacter then
+	hooksecurefunc(C_CurrencyInfo, "RequestCurrencyFromAccountCharacter", BankItems_Hook_CurrencyTransfer)
+end
+
 function BankItems_SaveReagentBank()
 	if not (Enum.BagIndex and Enum.BagIndex.Reagentbank) then
 		return --the reagent bank was removed from the game in 11.2; existing data is view-only
@@ -5307,6 +5344,7 @@ function BankItems_Search(searchText)
 	local searchTextOrg=searchText
 	local lineLimit = 2000
 	local errorCharactersList = newTable()
+	local templocalized
 	
 	lastErrorSearch = searchText
 	if searchText ~= "" then
@@ -6076,8 +6114,8 @@ function BankItems_Generate_SelfItemCache()
 	for num = 1, NUM_BANKGENERIC_SLOTS do
 		if bankPlayer[num] then
 			--temp = strmatch(bankPlayer[num].link, "%[(.*)%]")
-			if bankPlayer[num].hyperlink then
-				temp = tonumber(strmatch(bankPlayer[num].hyperlink, "item:(%d+)"))
+			if bankPlayer[num].link then
+				temp = tonumber(strmatch(bankPlayer[num].link, "item:(%d+)"))
 				if temp then
 					BankItems_Cache_ItemName(temp, bankPlayer[num].link)
 					data[temp] = data[temp] or newTable()
@@ -6807,9 +6845,10 @@ function BankItems_SaveGuildBankTabard()
 		t.tabard[4] = tabardEmblemLower
 		t.tabard[5] = tabardBorderUpper
 		t.tabard[6] = tabardBorderLower
-	end
-	if BankItems_GBFrame:IsVisible() and BankItems_GuildDropdown.selectedValue == selfGuildName then
-		BankItems_PopulateGuildTabard(selfGuildName)
+
+		if BankItems_GBFrame:IsVisible() and BankItems_GuildDropdown.selectedValue == selfGuildName then
+			BankItems_PopulateGuildTabard(selfGuildName)
+		end
 	end
 end
 
@@ -8028,6 +8067,11 @@ do
 	end)
 
 	-- Search Filter dropdown
+	-- Behavior2's real default-init lives in BankItems_Options_Init (VARIABLES_LOADED),
+	-- but SetupMenu below evaluates its checkbox callbacks eagerly, and this whole
+	-- Export frame is built at ADDON_LOADED time -- before VARIABLES_LOADED fires.
+	-- Guard here too so a fresh install/character doesn't crash on first load.
+	BankItems_Save.Behavior2 = BankItems_Save.Behavior2 or {true, true, false, true}
 	BankItems_ExportFrame_SearchDropDown = BankItems_CreateDropdown("BankItems_ExportFrame_SearchDropDown", BankItems_ExportFrame, 150)
 	BankItems_ExportFrame_SearchDropDown:SetPoint("BOTTOMLEFT", 7, 45)
 	BankItems_ExportFrame_SearchDropDown:SetupMenu(function(dropdown, rootDescription)
