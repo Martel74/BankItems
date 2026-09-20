@@ -1,4 +1,10 @@
 ------------------------------------------------------------------------
+v12.1.0.0 | 2026-08-11 | Interface bump for patch 12.1.0
+
+TOC updated to Interface 120100. No API changes in 12.1.0 affect bag,
+  bank, container, currency or mail reading; no code changes required.
+
+------------------------------------------------------------------------
 v12.0.7.0 | 2026-07-11 | Modernized for Midnight (12.0.7)
 
 TOC updated to Interface 120007; added IconTexture and addon category.
