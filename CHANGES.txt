@@ -1,4 +1,13 @@
 ------------------------------------------------------------------------
+v12.1.5.1 | 2026-10-01 | Patch 12.1.5 compatibility
+
+TOC now lists both 12.1.0 (120100) and 12.1.5 (120105).
+Patch 12.1.5 removes the deprecated globals GetCoinIcon and
+  GetCoinTextureString; BankItems now uses C_CurrencyInfo.GetCoinIcon and
+  C_CurrencyInfo.GetCoinTextureString (falling back to the globals on
+  older clients). Money icons and money text would have errored otherwise.
+
+------------------------------------------------------------------------
 v12.1.0.1 | 2026-08-11 | Combine Bags view; tab-icon and search-box fixes
 
 New Combine Bags feature: when the player's own Combine Bags CVar is on,

@@ -283,6 +283,9 @@ local ShowInspectCursor, ResetCursor, IsControlKeyDown = ShowInspectCursor, Rese
 
 -- Localize globals changing in Shadowlands
 local GetCurrencyListInfo, GetCurrencyListLink, GetCurrencyListSize, GetBackpackCurrencyInfo = C_CurrencyInfo.GetCurrencyListInfo, C_CurrencyInfo.GetCurrencyListLink, C_CurrencyInfo.GetCurrencyListSize, C_CurrencyInfo.GetBackpackCurrencyInfo
+-- Coin helpers moved to C_CurrencyInfo; the old globals were removed in 12.1.5
+local GetCoinIcon = C_CurrencyInfo.GetCoinIcon or GetCoinIcon
+local GetCoinTextureString = C_CurrencyInfo.GetCoinTextureString or GetCoinTextureString
 local GetSelectedQuest, LE_ITEM_QUALITY_COMMON = C_QuestLog.GetSelectedQuest, Enum.ItemQuality.Common
 
 
